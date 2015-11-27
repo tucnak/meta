@@ -18,7 +18,15 @@ package meta
 
 // Signal is an adorable piece of a structure!
 type Signal struct {
-	slots []Slot
+	cons []con
+
+	// gets incremented on every connect
+	conID Connection
+}
+
+type con struct {
+	slot Slot
+	cid  Connection
 }
 
 // Slot is a reciver function, usually a wrapper.
@@ -29,9 +37,15 @@ type Call struct {
 	Data interface{}
 }
 
+// Connection is a signal-slot connection descriptor, unique
+// within the lifetime of the signal.
+//
+// You may use it to terminate existing connections.
+type Connection int
+
 // Connect attaches a new slot to the signal. It also does
 // panic if any of the params given is equal to nil.
-func Connect(sig *Signal, slot Slot) {
+func Connect(sig *Signal, slot Slot) Connection {
 	if sig == nil {
 		panic("can't connect a nil signal")
 	}
@@ -40,12 +54,39 @@ func Connect(sig *Signal, slot Slot) {
 		panic("can't connect a nil slot")
 	}
 
-	sig.slots = append(sig.slots, slot)
+	sig.conID++
+
+	newConnection := con{
+		slot: slot,
+		cid:  sig.conID,
+	}
+
+	sig.cons = append(sig.cons, newConnection)
+
+	return sig.conID
+}
+
+// Disconnect does the opposite to connect.
+func Disconnect(sig *Signal, cid Connection) {
+	if sig == nil {
+		panic("can't disconnect a nil signal")
+	}
+
+	if cid <= 0 {
+		panic("invalid connection id")
+	}
+
+	for i := 0; i < len(sig.cons); i++ {
+		if sig.cons[i].cid == cid {
+			sig.cons = append(sig.cons[:i], sig.cons[i+1:]...)
+			return
+		}
+	}
 }
 
 // Emit executes all the connected slots with data given.
 func (sig *Signal) Emit(data interface{}) {
-	for i := range sig.slots {
-		sig.slots[i](&Call{Data: data})
+	for i := 0; i < len(sig.cons); i++ {
+		sig.cons[i].slot(&Call{Data: data})
 	}
 }

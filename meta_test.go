@@ -30,7 +30,6 @@ func TestConnect(t *testing.T) {
 			pipe <- b.sum(nums.a, nums.b)
 		} else {
 			t.Fatal("transferred data is rubbish")
-			return
 		}
 	})
 
@@ -45,4 +44,21 @@ func TestConnect(t *testing.T) {
 		t.Fatal("the whole thing doesn't really work")
 		return
 	}
+}
+
+func TestDisconnect(t *testing.T) {
+	var a A
+
+	cn1 := Connect(&a.done, func(*Call) {
+		t.Fatal("slot 1 got executed somehow")
+	})
+
+	cn2 := Connect(&a.done, func(*Call) {
+		t.Fatal("slot 2 got executed somehow")
+	})
+
+	Disconnect(&a.done, cn1)
+	Disconnect(&a.done, cn2)
+
+	a.done.Emit(nil)
 }
