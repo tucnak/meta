@@ -14,6 +14,7 @@ package main
 import (
 	"fmt"
 	"github.com/tucnak/meta"
+	"sync"
 )
 
 type Foo struct {
@@ -28,7 +29,10 @@ type Guy struct {
 
 func (mr Guy) Print(n int) {
 	fmt.Printf("%s says: %d\n", mr.Name, n)
+	waiter.Done()
 }
+
+var waiter sync.WaitGroup
 
 func main() {
 	var foo Foo
@@ -48,9 +52,13 @@ func main() {
 		}
 	})
 
+	waiter.Add(2)
+
 	// Emit notifies all the connected slots, by running
 	// them in the distinct goroutines.
 	foo.Done.Emit(42)
+
+	waiter.Wait()
 
 	//
 	// Johny says: 42
