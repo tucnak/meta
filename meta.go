@@ -87,6 +87,6 @@ func Disconnect(sig *Signal, cid Connection) {
 // Emit executes all the connected slots with data given.
 func (sig *Signal) Emit(data interface{}) {
 	for i := 0; i < len(sig.cons); i++ {
-		sig.cons[i].slot(&Call{Data: data})
+		go sig.cons[i].slot(&Call{Data: data})
 	}
 }
